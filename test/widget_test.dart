@@ -11,7 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hive/hive.dart';
 
-import 'package:demo/app/app.dart';
+import 'package:next_class/app/app.dart';
 
 void main() {
   setUpAll(() async {

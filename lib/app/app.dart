@@ -10,7 +10,7 @@ class TimetableApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Timetable',
+      title: 'NextClass',
       theme: AppTheme.light(),
       initialRoute: AppRoutes.home,
       routes: {
