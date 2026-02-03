@@ -5,26 +5,31 @@
 // gestures. You can also use WidgetTester to find child widgets in the widget
 // tree, read text, and verify that the values of widget properties are correct.
 
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hive/hive.dart';
 
-import 'package:demo/main.dart';
+import 'package:demo/app/app.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  setUpAll(() async {
+    final directory = await Directory.systemTemp.createTemp();
+    Hive.init(directory.path);
+    await Hive.openBox<Map>('courses');
+  });
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+  tearDownAll(() async {
+    await Hive.close();
+  });
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
+  testWidgets('App shell renders timetable screen', (WidgetTester tester) async {
+    await tester.pumpWidget(const TimetableApp());
+    await tester.pumpAndSettle();
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    expect(find.text('周一'), findsOneWidget);
+    expect(find.byIcon(Icons.calendar_today), findsOneWidget);
+    expect(find.byIcon(Icons.add), findsOneWidget);
   });
 }
