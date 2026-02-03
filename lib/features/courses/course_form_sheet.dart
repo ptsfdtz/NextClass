@@ -3,9 +3,10 @@ import 'package:flutter/material.dart';
 import '../../data/models/course.dart';
 
 class CourseFormSheet extends StatefulWidget {
-  const CourseFormSheet({super.key, this.initial});
+  const CourseFormSheet({super.key, this.initial, required this.maxPeriods});
 
   final Course? initial;
+  final int maxPeriods;
 
   @override
   State<CourseFormSheet> createState() => _CourseFormSheetState();
@@ -39,8 +40,9 @@ class _CourseFormSheetState extends State<CourseFormSheet> {
     _roomController = TextEditingController(text: initial?.location ?? '');
     _teacherController = TextEditingController(text: initial?.teacher ?? '');
     _weekday = initial?.weekday ?? 1;
-    _startPeriod = initial?.startPeriod ?? 1;
-    _endPeriod = initial?.endPeriod ?? 2;
+    _startPeriod = (initial?.startPeriod ?? 1).clamp(1, widget.maxPeriods);
+    _endPeriod = (initial?.endPeriod ?? (_startPeriod + 1))
+        .clamp(1, widget.maxPeriods);
     _colorHex = initial?.colorHex ?? _colors.first.value;
   }
 
@@ -214,7 +216,7 @@ class _CourseFormSheetState extends State<CourseFormSheet> {
       value: _startPeriod,
       decoration: const InputDecoration(labelText: '起始节次'),
       items: List.generate(
-        8,
+        widget.maxPeriods,
         (index) => DropdownMenuItem(
           value: index + 1,
           child: Text('第 ${index + 1} 节'),
@@ -233,7 +235,7 @@ class _CourseFormSheetState extends State<CourseFormSheet> {
       value: _endPeriod,
       decoration: const InputDecoration(labelText: '结束节次'),
       items: List.generate(
-        8,
+        widget.maxPeriods,
         (index) => DropdownMenuItem(
           value: index + 1,
           child: Text('第 ${index + 1} 节'),

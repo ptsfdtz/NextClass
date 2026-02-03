@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 
 import '../../../data/models/course.dart';
+import '../../../data/models/period.dart';
 import '../models/timetable_models.dart';
 
 class TimetableGrid extends StatelessWidget {
   static const int _days = 7;
-  static const int _periods = 8;
   static const double _timeColumnWidth = 44;
   static const double _cellHeight = 88;
-  static const double _rowGap = 6;
-  static const double _columnGap = 6;
-  static const double _timeColumnGap = 8;
+  static const double _rowGap = 4;
+  static const double _columnGap = 4;
+  static const double _timeColumnGap = 6;
 
   final List<String> _dayLabels = const [
     '周一',
@@ -22,32 +22,23 @@ class TimetableGrid extends StatelessWidget {
     '周日',
   ];
 
-  final List<PeriodTime> _periodTimes = const [
-    PeriodTime('08:00', '08:45'),
-    PeriodTime('08:55', '09:40'),
-    PeriodTime('10:00', '10:45'),
-    PeriodTime('10:55', '11:40'),
-    PeriodTime('14:00', '14:45'),
-    PeriodTime('14:55', '15:40'),
-    PeriodTime('16:00', '16:45'),
-    PeriodTime('16:55', '17:40'),
-  ];
-
-  const TimetableGrid({super.key, required this.courses});
+  const TimetableGrid({super.key, required this.courses, required this.periods});
 
   final List<Course> courses;
+  final List<Period> periods;
 
   @override
   Widget build(BuildContext context) {
     final blocksByDay = <int, List<CourseBlock>>{};
+    final periodCount = periods.isEmpty ? 8 : periods.length;
     for (final course in courses) {
       if (course.weekday < 1 || course.weekday > _days) {
         continue;
       }
-      if (course.startPeriod < 1 || course.startPeriod > _periods) {
+      if (course.startPeriod < 1 || course.startPeriod > periodCount) {
         continue;
       }
-      final normalizedEnd = course.endPeriod.clamp(1, _periods);
+      final normalizedEnd = course.endPeriod.clamp(1, periodCount);
       final block = CourseBlock(
         day: course.weekday,
         startPeriod: course.startPeriod,
@@ -90,7 +81,7 @@ class TimetableGrid extends StatelessWidget {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildTimeColumn(),
+                  _buildTimeColumn(periods),
                   const SizedBox(width: _timeColumnGap),
                   ...List.generate(_days, (index) {
                     return Padding(
@@ -101,6 +92,7 @@ class TimetableGrid extends StatelessWidget {
                         day: index + 1,
                         width: dayWidth,
                         blocks: blocksByDay[index + 1] ?? const [],
+                        periodCount: periodCount,
                       ),
                     );
                   }),
@@ -134,7 +126,7 @@ class TimetableGrid extends StatelessWidget {
             alignment: Alignment.center,
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(8),
             ),
             margin: EdgeInsets.only(right: index == _days - 1 ? 0 : _columnGap),
             child: Text(
@@ -150,13 +142,14 @@ class TimetableGrid extends StatelessWidget {
     );
   }
 
-  Widget _buildTimeColumn() {
+  Widget _buildTimeColumn(List<Period> periods) {
     return Column(
-      children: List.generate(_periods, (index) {
+      children: List.generate(periods.length, (index) {
         final period = index + 1;
-        final time = _periodTimes[index];
+        final time = periods[index];
         return Padding(
-          padding: EdgeInsets.only(bottom: index == _periods - 1 ? 0 : _rowGap),
+          padding:
+              EdgeInsets.only(bottom: index == periods.length - 1 ? 0 : _rowGap),
           child: SizedBox(
             width: _timeColumnWidth,
             height: _cellHeight,
@@ -172,7 +165,7 @@ class TimetableGrid extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '${time.start}\n${time.end}',
+                  '${time.startTime}\n${time.endTime}',
                   textAlign: TextAlign.center,
                   style: const TextStyle(
                     fontSize: 10,
@@ -191,10 +184,11 @@ class TimetableGrid extends StatelessWidget {
     required int day,
     required double width,
     required List<CourseBlock> blocks,
+    required int periodCount,
   }) {
     final children = <Widget>[];
     var period = 1;
-    while (period <= _periods) {
+    while (period <= periodCount) {
       CourseBlock? block;
       for (final candidate in blocks) {
         if (candidate.startPeriod == period) {
@@ -207,7 +201,8 @@ class TimetableGrid extends StatelessWidget {
         children.add(_EmptyCell(width: width, height: _cellHeight));
         period += 1;
       } else {
-        final span = (block.endPeriod - block.startPeriod + 1).clamp(1, _periods);
+        final span =
+            (block.endPeriod - block.startPeriod + 1).clamp(1, periodCount);
         final height = _cellHeight * span + _rowGap * (span - 1).toDouble();
         children.add(
           _CourseCell(
@@ -219,7 +214,7 @@ class TimetableGrid extends StatelessWidget {
         period += span;
       }
 
-      if (period <= _periods) {
+      if (period <= periodCount) {
         children.add(const SizedBox(height: _rowGap));
       }
     }
@@ -244,41 +239,45 @@ class _CourseCell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final contentWidth = width - 12;
     return Container(
       width: width,
       height: height,
       padding: const EdgeInsets.all(6),
       decoration: BoxDecoration(
         color: block.color.withOpacity(0.16),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(color: block.color.withOpacity(0.6)),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            block.name,
-            maxLines: 2,
-            softWrap: true,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontWeight: FontWeight.w700,
-              color: block.color,
-              fontSize: 12,
-            ),
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        alignment: Alignment.topLeft,
+        child: SizedBox(
+          width: contentWidth > 0 ? contentWidth : width,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                block.name,
+                softWrap: true,
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  color: block.color,
+                  fontSize: 12,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                block.room,
+                softWrap: true,
+                style: const TextStyle(
+                  color: Colors.black54,
+                  fontSize: 10,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 2),
-          Text(
-            block.room,
-            maxLines: 2,
-            softWrap: true,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: Colors.black54,
-              fontSize: 10,
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -297,7 +296,7 @@ class _EmptyCell extends StatelessWidget {
       height: height,
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(8),
       ),
     );
   }

@@ -17,7 +17,7 @@ class _HomeShellState extends State<HomeShell> {
   final _screens = [
     TimetableScreen(),
     CourseListScreen(),
-    const SettingsScreen(),
+    SettingsScreen(),
   ];
 
   @override

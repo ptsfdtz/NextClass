@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 import '../../data/local/hive_course_repository.dart';
+import '../../data/local/hive_settings_repository.dart';
+import '../../data/models/app_settings.dart';
 import '../../data/models/course.dart';
 import 'course_form_sheet.dart';
 
@@ -9,56 +11,77 @@ class CourseListScreen extends StatelessWidget {
   CourseListScreen({super.key});
 
   final _repository = HiveCourseRepository();
+  final _settingsRepository = HiveSettingsRepository();
 
   @override
   Widget build(BuildContext context) {
     final box = Hive.box<Map>('courses');
+    final settingsBox = Hive.box<Map>('settings');
     return Scaffold(
       appBar: AppBar(
         title: const Text('课程'),
         actions: [
           IconButton(
-            onPressed: () => _openForm(context),
+            onPressed: () => _openForm(context, maxPeriods: _readSettings(settingsBox).periodCount),
             icon: const Icon(Icons.add),
             tooltip: '新增课程',
           ),
         ],
       ),
       body: ValueListenableBuilder<Box<Map>>(
-        valueListenable: box.listenable(),
-        builder: (context, value, child) {
-          final courses = value.values.map(Course.fromMap).toList()
-            ..sort((a, b) {
-              final weekdayCompare = a.weekday.compareTo(b.weekday);
-              if (weekdayCompare != 0) {
-                return weekdayCompare;
+        valueListenable: settingsBox.listenable(),
+        builder: (context, settingsValue, child) {
+          final settings = _readSettings(settingsValue);
+          return ValueListenableBuilder<Box<Map>>(
+            valueListenable: box.listenable(),
+            builder: (context, value, child) {
+              final courses = value.values.map(Course.fromMap).toList()
+                ..sort((a, b) {
+                  final weekdayCompare = a.weekday.compareTo(b.weekday);
+                  if (weekdayCompare != 0) {
+                    return weekdayCompare;
+                  }
+                  return a.startPeriod.compareTo(b.startPeriod);
+                });
+
+              if (courses.isEmpty) {
+                return const Center(
+                  child: Text('暂无课程，点击右上角新增'),
+                );
               }
-              return a.startPeriod.compareTo(b.startPeriod);
-            });
 
-          if (courses.isEmpty) {
-            return const Center(
-              child: Text('暂无课程，点击右上角新增'),
-            );
-          }
-
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: courses.length,
-            itemBuilder: (context, index) {
-              final course = courses[index];
-              return _CourseTile(
-                title: course.name,
-                subtitle: _formatSubtitle(course),
-                color: Color(course.colorHex),
-                onTap: () => _openForm(context, initial: course),
-                onDelete: () => _repository.deleteCourse(course.id),
+              return ListView.builder(
+                padding: const EdgeInsets.all(16),
+                itemCount: courses.length,
+                itemBuilder: (context, index) {
+                  final course = courses[index];
+                  return _CourseTile(
+                    title: course.name,
+                    subtitle: _formatSubtitle(course),
+                    color: Color(course.colorHex),
+                    onTap: () => _openForm(
+                      context,
+                      initial: course,
+                      maxPeriods: settings.periodCount,
+                    ),
+                    onDelete: () => _repository.deleteCourse(course.id),
+                  );
+                },
               );
             },
           );
         },
       ),
     );
+  }
+
+  AppSettings _readSettings(Box<Map> box) {
+    final map = box.get('app');
+    final settings = AppSettings.fromMap(map);
+    if (map == null) {
+      _settingsRepository.save(settings);
+    }
+    return settings;
   }
 
   String _formatSubtitle(Course course) {
@@ -70,12 +93,17 @@ class CourseListScreen extends StatelessWidget {
     return '$weekday $period · ${course.location}';
   }
 
-  Future<void> _openForm(BuildContext context, {Course? initial}) async {
+  Future<void> _openForm(
+    BuildContext context, {
+    Course? initial,
+    required int maxPeriods,
+  }) async {
     final result = await showModalBottomSheet<Course>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => CourseFormSheet(initial: initial),
+      builder: (context) =>
+          CourseFormSheet(initial: initial, maxPeriods: maxPeriods),
     );
 
     if (result != null) {

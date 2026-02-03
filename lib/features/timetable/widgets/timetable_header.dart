@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 
-class TimetableHeader extends StatelessWidget {
-  const TimetableHeader({super.key, this.onAdd});
+import '../../../data/models/app_settings.dart';
 
+class TimetableHeader extends StatelessWidget {
+  const TimetableHeader({super.key, required this.settings, this.onAdd});
+
+  final AppSettings settings;
   final VoidCallback? onAdd;
 
   String _twoDigits(int value) => value.toString().padLeft(2, '0');
@@ -19,21 +22,32 @@ class TimetableHeader extends StatelessWidget {
     return labels[(weekday - 1) % 7];
   }
 
-  int _isoWeekNumber(DateTime date) {
-    final weekday = date.weekday;
-    final thursday = date.add(Duration(days: 4 - weekday));
-    final firstThursday = DateTime(thursday.year, 1, 4);
-    final firstThursdayWeekday = firstThursday.weekday;
-    final firstWeekThursday =
-        firstThursday.add(Duration(days: 4 - firstThursdayWeekday));
-    final diffDays = thursday.difference(firstWeekThursday).inDays;
-    return diffDays ~/ 7 + 1;
+  DateTime _dateOnly(DateTime date) {
+    return DateTime(date.year, date.month, date.day);
+  }
+
+  DateTime _weekStart(DateTime date, int weekStartDay) {
+    final normalized = (weekStartDay == 7) ? 7 : 1;
+    var delta = date.weekday - normalized;
+    if (delta < 0) {
+      delta += 7;
+    }
+    return date.subtract(Duration(days: delta));
+  }
+
+  int _semesterWeekNumber(DateTime today) {
+    final start = _dateOnly(settings.semesterStart);
+    final anchor = _weekStart(start, settings.weekStartDay);
+    final now = _dateOnly(today);
+    final diffDays = now.difference(anchor).inDays;
+    final week = diffDays ~/ 7 + 1;
+    return week < 1 ? 1 : week;
   }
 
   @override
   Widget build(BuildContext context) {
     final today = DateTime.now();
-    final weekNumber = _isoWeekNumber(today);
+    final weekNumber = _semesterWeekNumber(today);
     final weekday = _weekdayLabel(today.weekday);
 
     return Row(

@@ -17,10 +17,3 @@ class CourseBlock {
   final String room;
   final Color color;
 }
-
-class PeriodTime {
-  const PeriodTime(this.start, this.end);
-
-  final String start;
-  final String end;
-}

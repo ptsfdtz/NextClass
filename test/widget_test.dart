@@ -18,6 +18,7 @@ void main() {
     final directory = await Directory.systemTemp.createTemp();
     Hive.init(directory.path);
     await Hive.openBox<Map>('courses');
+    await Hive.openBox<Map>('settings');
   });
 
   tearDownAll(() async {
@@ -31,5 +32,8 @@ void main() {
     expect(find.text('周一'), findsOneWidget);
     expect(find.byIcon(Icons.calendar_today), findsOneWidget);
     expect(find.byIcon(Icons.add), findsOneWidget);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pumpAndSettle();
   });
 }
