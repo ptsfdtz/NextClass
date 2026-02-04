@@ -2,8 +2,9 @@ name: Build
 
 on:
   push:
-    branches: [ main ]
-  pull_request:
+    branches: [ release ]
+    tags:
+      - 'v*'
 
 jobs:
   build-android:
@@ -13,10 +14,32 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
+      - name: Resolve version
+        id: version
+        run: |
+          VERSION=$(python - <<'PY'
+          import re
+          with open('pubspec.yaml', 'r', encoding='utf-8') as f:
+              content = f.read()
+          match = re.search(r'^version:\s*([^\n]+)$', content, re.M)
+          print(match.group(1).strip() if match else '0.0.0+0')
+          PY
+          )
+          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            LABEL="${VERSION}"
+          else
+            LABEL="${VERSION}-test.${GITHUB_RUN_NUMBER}"
+          fi
+          echo "version_label=${LABEL}" >> "$GITHUB_OUTPUT"
       - name: Pub get
         run: flutter pub get
-      - name: Build Android APK (debug)
-        run: flutter build apk --debug
+      - name: Build Android APK (release)
+        run: flutter build apk --release
+      - name: Upload Android APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: NextClass-android-${{ steps.version.outputs.version_label }}
+          path: build/app/outputs/flutter-apk/app-release.apk
 
   build-ios:
     runs-on: macos-latest
@@ -25,7 +48,33 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
+      - name: Resolve version
+        id: version
+        run: |
+          VERSION=$(python - <<'PY'
+          import re
+          with open('pubspec.yaml', 'r', encoding='utf-8') as f:
+              content = f.read()
+          match = re.search(r'^version:\s*([^\n]+)$', content, re.M)
+          print(match.group(1).strip() if match else '0.0.0+0')
+          PY
+          )
+          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            LABEL="${VERSION}"
+          else
+            LABEL="${VERSION}-test.${GITHUB_RUN_NUMBER}"
+          fi
+          echo "version_label=${LABEL}" >> "$GITHUB_OUTPUT"
       - name: Pub get
         run: flutter pub get
       - name: Build iOS (no codesign)
-        run: flutter build ios --no-codesign
+        run: flutter build ios --release --no-codesign
+      - name: Archive iOS app
+        run: |
+          cd build/ios/iphoneos
+          zip -r "NextClass-ios-${{ steps.version.outputs.version_label }}.zip" Runner.app
+      - name: Upload iOS app
+        uses: actions/upload-artifact@v4
+        with:
+          name: NextClass-ios-${{ steps.version.outputs.version_label }}
+          path: build/ios/iphoneos/NextClass-ios-${{ steps.version.outputs.version_label }}.zip
