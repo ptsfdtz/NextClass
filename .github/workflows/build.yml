@@ -40,6 +40,11 @@ jobs:
         with:
           name: NextClass-android-${{ steps.version.outputs.version_label }}
           path: build/app/outputs/flutter-apk/app-release.apk
+      - name: Upload Android to GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: build/app/outputs/flutter-apk/app-release.apk
 
   build-ios:
     runs-on: macos-latest
@@ -78,3 +83,42 @@ jobs:
         with:
           name: NextClass-ios-${{ steps.version.outputs.version_label }}
           path: build/ios/iphoneos/NextClass-ios-${{ steps.version.outputs.version_label }}.zip
+      - name: Upload iOS to GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: build/ios/iphoneos/NextClass-ios-${{ steps.version.outputs.version_label }}.zip
+
+  prerelease:
+    if: github.ref == 'refs/heads/release'
+    needs: [build-android, build-ios]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Resolve version
+        id: version
+        run: |
+          VERSION=$(python - <<'PY'
+          import re
+          with open('pubspec.yaml', 'r', encoding='utf-8') as f:
+              content = f.read()
+          match = re.search(r'^version:\s*([^\n]+)$', content, re.M)
+          print(match.group(1).strip() if match else '0.0.0+0')
+          PY
+          )
+          LABEL="${VERSION}-test.${GITHUB_RUN_NUMBER}"
+          echo "version_label=${LABEL}" >> "$GITHUB_OUTPUT"
+          echo "tag_name=pre-${LABEL}" >> "$GITHUB_OUTPUT"
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+      - name: Create pre-release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag_name }}
+          name: NextClass ${{ steps.version.outputs.version_label }}
+          prerelease: true
+          files: |
+            dist/**/app-release.apk
+            dist/**/*.zip
