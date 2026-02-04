@@ -19,10 +19,17 @@ class TimetableScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final box = Hive.box<Map>('courses');
     final settingsBox = Hive.box<Map>('settings');
+    final colorScheme = Theme.of(context).colorScheme;
+    final surface = Theme.of(context).scaffoldBackgroundColor;
+    final tinted = Color.alphaBlend(
+      colorScheme.primary.withOpacity(0.08),
+      surface,
+    );
+
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [Color(0xFFF6F7FB), Color(0xFFEAF1FF)],
+          colors: [surface, tinted],
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
         ),

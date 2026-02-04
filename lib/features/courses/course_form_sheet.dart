@@ -30,6 +30,8 @@ class _CourseFormSheetState extends State<CourseFormSheet> {
     Color(0xFFE76F51),
     Color(0xFF6C63FF),
     Color(0xFF2A9D8F),
+    Color(0xFFF2C14E),
+    Color(0xFFEF476F),
   ];
 
   @override

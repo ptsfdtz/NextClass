@@ -76,12 +76,12 @@ class TimetableGrid extends StatelessWidget {
           },
           child: Column(
             children: [
-              _buildHeaderRow(dayWidth),
+              _buildHeaderRow(context, dayWidth),
               const SizedBox(height: 8),
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildTimeColumn(periods),
+                  _buildTimeColumn(context, periods),
                   const SizedBox(width: _timeColumnGap),
                   ...List.generate(_days, (index) {
                     return Padding(
@@ -105,7 +105,7 @@ class TimetableGrid extends StatelessWidget {
     );
   }
 
-  Widget _buildHeaderRow(double dayWidth) {
+  Widget _buildHeaderRow(BuildContext context, double dayWidth) {
     return Row(
       children: [
         SizedBox(
@@ -125,15 +125,16 @@ class TimetableGrid extends StatelessWidget {
             height: 36,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: Theme.of(context).cardTheme.color ?? Colors.white,
               borderRadius: BorderRadius.circular(8),
             ),
             margin: EdgeInsets.only(right: index == _days - 1 ? 0 : _columnGap),
             child: Text(
               _dayLabels[index],
-              style: const TextStyle(
+              style: TextStyle(
                 fontWeight: FontWeight.w600,
                 fontSize: 12,
+                color: Theme.of(context).textTheme.bodyMedium?.color,
               ),
             ),
           );
@@ -142,7 +143,7 @@ class TimetableGrid extends StatelessWidget {
     );
   }
 
-  Widget _buildTimeColumn(List<Period> periods) {
+  Widget _buildTimeColumn(BuildContext context, List<Period> periods) {
     return Column(
       children: List.generate(periods.length, (index) {
         final period = index + 1;
@@ -167,11 +168,15 @@ class TimetableGrid extends StatelessWidget {
                 Text(
                   '${time.startTime}\n${time.endTime}',
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontSize: 10,
-                    color: Colors.black54,
-                  ),
+                style: TextStyle(
+                  fontSize: 10,
+                  color: Theme.of(context)
+                      .textTheme
+                      .bodySmall
+                      ?.color
+                      ?.withOpacity(0.7),
                 ),
+              ),
               ],
             ),
           ),
@@ -240,12 +245,13 @@ class _CourseCell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final contentWidth = width - 12;
+    final cardColor = Theme.of(context).cardTheme.color ?? Colors.white;
     return Container(
       width: width,
       height: height,
       padding: const EdgeInsets.all(6),
       decoration: BoxDecoration(
-        color: block.color.withOpacity(0.16),
+        color: Color.alphaBlend(block.color.withOpacity(0.2), cardColor),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: block.color.withOpacity(0.6)),
       ),
@@ -291,11 +297,12 @@ class _EmptyCell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cardColor = Theme.of(context).cardTheme.color ?? Colors.white;
     return Container(
       width: width,
       height: height,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: cardColor,
         borderRadius: BorderRadius.circular(8),
       ),
     );

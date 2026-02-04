@@ -57,6 +57,22 @@ class SettingsScreen extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               _SettingsSection(
+                title: '主题',
+                children: [
+                  _SettingsTile(
+                    label: '主题风格',
+                    value: _presetLabel(settings.themePreset),
+                    onTap: () => _editThemePreset(context, settings),
+                  ),
+                  _SettingsTile(
+                    label: '显示模式',
+                    value: _themeModeLabel(settings.themeMode),
+                    onTap: () => _editThemeMode(context, settings),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              _SettingsSection(
                 title: '提醒',
                 children: [
                   SwitchListTile.adaptive(
@@ -242,6 +258,119 @@ class SettingsScreen extends StatelessWidget {
     await _repository.save(settings.copyWith(reminderMinutes: result));
   }
 
+  String _presetLabel(String preset) {
+    switch (preset) {
+      case 'forest':
+        return '森林';
+      case 'sunset':
+        return '日落';
+      case 'ocean':
+      default:
+        return '海洋';
+    }
+  }
+
+  String _themeModeLabel(String mode) {
+    switch (mode) {
+      case 'light':
+        return '浅色';
+      case 'dark':
+        return '深色';
+      default:
+        return '跟随系统';
+    }
+  }
+
+  Future<void> _editThemePreset(
+    BuildContext context,
+    AppSettings settings,
+  ) async {
+    final result = await showModalBottomSheet<String>(
+      context: context,
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                title: const Text('海洋'),
+                trailing: settings.themePreset == 'ocean'
+                    ? const Icon(Icons.check)
+                    : null,
+                onTap: () => Navigator.of(context).pop('ocean'),
+              ),
+              ListTile(
+                title: const Text('森林'),
+                trailing: settings.themePreset == 'forest'
+                    ? const Icon(Icons.check)
+                    : null,
+                onTap: () => Navigator.of(context).pop('forest'),
+              ),
+              ListTile(
+                title: const Text('日落'),
+                trailing: settings.themePreset == 'sunset'
+                    ? const Icon(Icons.check)
+                    : null,
+                onTap: () => Navigator.of(context).pop('sunset'),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+
+    if (result == null) {
+      return;
+    }
+
+    await _repository.save(settings.copyWith(themePreset: result));
+  }
+
+  Future<void> _editThemeMode(
+    BuildContext context,
+    AppSettings settings,
+  ) async {
+    final result = await showModalBottomSheet<String>(
+      context: context,
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                title: const Text('跟随系统'),
+                trailing: settings.themeMode == 'system'
+                    ? const Icon(Icons.check)
+                    : null,
+                onTap: () => Navigator.of(context).pop('system'),
+              ),
+              ListTile(
+                title: const Text('浅色'),
+                trailing: settings.themeMode == 'light'
+                    ? const Icon(Icons.check)
+                    : null,
+                onTap: () => Navigator.of(context).pop('light'),
+              ),
+              ListTile(
+                title: const Text('深色'),
+                trailing: settings.themeMode == 'dark'
+                    ? const Icon(Icons.check)
+                    : null,
+                onTap: () => Navigator.of(context).pop('dark'),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+
+    if (result == null) {
+      return;
+    }
+
+    await _repository.save(settings.copyWith(themeMode: result));
+  }
+
   List<Period> _normalizePeriods(List<Period> current, int count) {
     if (current.length == count) {
       return current;
@@ -331,13 +460,21 @@ class _SettingsTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    final titleColor = textTheme.bodyMedium?.color;
+    final valueColor = enabled
+        ? textTheme.bodySmall?.color ?? Colors.black54
+        : (textTheme.bodySmall?.color ?? Colors.black54).withOpacity(0.4);
     return ListTile(
       dense: true,
       contentPadding: EdgeInsets.zero,
-      title: Text(label),
+      title: Text(
+        label,
+        style: TextStyle(color: titleColor),
+      ),
       trailing: Text(
         value,
-        style: TextStyle(color: enabled ? Colors.black54 : Colors.black26),
+        style: TextStyle(color: valueColor),
       ),
       onTap: enabled ? onTap : null,
     );

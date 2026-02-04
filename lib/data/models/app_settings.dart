@@ -8,6 +8,8 @@ class AppSettings {
     required this.periods,
     required this.reminderEnabled,
     required this.reminderMinutes,
+    required this.themeMode,
+    required this.themePreset,
   });
 
   final DateTime semesterStart;
@@ -16,6 +18,8 @@ class AppSettings {
   final List<Period> periods;
   final bool reminderEnabled;
   final int reminderMinutes;
+  final String themeMode;
+  final String themePreset;
 
   int get periodCount => periods.length;
 
@@ -26,6 +30,8 @@ class AppSettings {
     List<Period>? periods,
     bool? reminderEnabled,
     int? reminderMinutes,
+    String? themeMode,
+    String? themePreset,
   }) {
     return AppSettings(
       semesterStart: semesterStart ?? this.semesterStart,
@@ -34,6 +40,8 @@ class AppSettings {
       periods: periods ?? this.periods,
       reminderEnabled: reminderEnabled ?? this.reminderEnabled,
       reminderMinutes: reminderMinutes ?? this.reminderMinutes,
+      themeMode: themeMode ?? this.themeMode,
+      themePreset: themePreset ?? this.themePreset,
     );
   }
 
@@ -45,6 +53,8 @@ class AppSettings {
       'periods': periods.map((p) => p.toMap()).toList(),
       'reminderEnabled': reminderEnabled,
       'reminderMinutes': reminderMinutes,
+      'themeMode': themeMode,
+      'themePreset': themePreset,
     };
   }
 
@@ -83,6 +93,8 @@ class AppSettings {
       reminderMinutes: map['reminderMinutes'] is int
           ? map['reminderMinutes'] as int
           : 10,
+      themeMode: map['themeMode']?.toString() ?? 'system',
+      themePreset: map['themePreset']?.toString() ?? 'ocean',
     );
   }
 
@@ -106,6 +118,8 @@ class AppSettings {
       ],
       reminderEnabled: false,
       reminderMinutes: 10,
+      themeMode: 'system',
+      themePreset: 'ocean',
     );
   }
 }
